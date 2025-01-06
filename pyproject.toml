@@ -13,6 +13,7 @@ seaborn = "^0.13.2"
 datetime = "^5.5"
 plotly = "^5.24.1"
 pytz = "^2024.2"
+yfinance = "^0.2.51"
 
 
 [build-system]
