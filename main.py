@@ -33,7 +33,7 @@ with tab_symb:
         st.write("Table with all companies in S&P 500")
         tickers_df = pd.read_html(
             'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]
-        st.dataframe(tickers_df.sort_values('Symbol').iloc[:, :2])
+        st.dataframe(tickers_df.rename(columns={'Security':'Company'}).sort_values('Company').iloc[:, :2])
 
 
 list_dates = [datetime.strftime(d,'%Y-%m-%d') for d in range_date]
