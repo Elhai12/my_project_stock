@@ -28,6 +28,7 @@ with tab_symb:
     col_tiker,col_df =st.columns([2,1.5])
     with col_tiker:
         tiker = st.text_input("The symbol",placeholder= "Insert here the symbol, for example: AAPL")
+        tiker = tiker.upper()
     with col_df:
         st.write("Table with all companies in S&P 500")
         tickers_df = pd.read_html(
