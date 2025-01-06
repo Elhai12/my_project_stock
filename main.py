@@ -29,6 +29,8 @@ with tab_symb:
     with col_tiker:
         tiker = st.text_input("The symbol",placeholder= "Insert here the symbol, for example: AAPL")
         tiker = tiker.upper()
+        if tiker:
+            tiker_check, info_stock = Function.check_valid_tiker(tiker)
     with col_df:
         st.write("Table with all companies in S&P 500")
         tickers_df = pd.read_html(
@@ -39,10 +41,11 @@ with tab_symb:
 list_dates = [datetime.strftime(d,'%Y-%m-%d') for d in range_date]
 
 #After the user press enter and the tiker variable inserted
-if tiker:
+
 #Check if tiker valid
-    tiker_check,info_stock = Function.check_valid_tiker(tiker)
+
 #Define tab 4,5 for meta data and fundamental data from yfinance
+if tiker:
     if tiker_check=='Valid':
         tab3,tab4 =st.tabs(['Metadata Symbol','Fundamental Data'])
         with tab3:
