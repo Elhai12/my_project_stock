@@ -25,7 +25,7 @@ with tab_date:
         max_value=today
     )
 with tab_symb:
-    col_tiker,col_df =st.columns([1,2])
+    col_tiker,col_df =st.columns([2,1.5])
     with col_tiker:
         tiker = st.text_input("The symbol",placeholder= "Insert here the symbol, for example: AAPL")
     with col_df:
