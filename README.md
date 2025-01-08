@@ -13,3 +13,7 @@ The project presents data on a stock by its symbol
 Under the "Compare stock with index" tab, choose an index
 (by default, it is set to the S&P 500)
 and the graph will display the cumulative return comparison for the selected period.
+
+link to presentation: 
+
+[presentation](https://docs.google.com/presentation/d/1PK5WYlfHj3LpEKEaXyk3PYydT7bmhtqE/edit?usp=drive_link&ouid=113334722140116177196&rtpof=true&sd=true)
