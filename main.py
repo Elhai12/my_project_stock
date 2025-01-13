@@ -4,10 +4,14 @@ import pandas as pd
 import seaborn as sns
 from datetime import datetime,timedelta
 import yfinance as yf
-from streamlit import session_state
+from streamlit import session_state, container
 from streamlit_autorefresh import st_autorefresh
 import time
 import Function
+from get_all_tickers import get_tickers as gt
+import numpy as np
+import os
+# from autoviz.AutoViz_Class import AutoViz_Class
 
 
 #Define secret code
@@ -22,27 +26,19 @@ lists_stocks = {'Magnificent_Seven':['GOOG','AMZN','AAPL','META','MSFT','NVDA','
                   'Global_ind':['SPY','QQQ','^RUT','^DJI','^N225']}
 #Define tabs 1 ,2 to insert tiker and range dates
 
-col_date_sym,col_update = st.columns([1,1])
-with col_date_sym:
-    today = datetime.now()
-    week_before = today + timedelta(weeks=-1)
-    range_date = st.date_input(
-        "Range of dates"
-        " (by default is one week back from today)",
-        (week_before,today),
-        format="YYYY-MM-DD",
-        max_value=today
-    )
-# with col_symb:
-    # col_tiker,col_df =st.columns([2,1.5])
-    # with col_tiker:
+col_sym,col_update = st.columns([2,1.7])
+with col_sym:
+
+
     tiker = st.text_input("Symbol",placeholder= "For example: AAPL")
     tiker = tiker.upper()
     if tiker:
             info_stock = yf.Ticker(tiker)
             tiker_check= Function.check_valid_tiker(info_stock)
-    expander_sp = st.expander("Show all companies in S&P 500", expanded=False)
-    expander_nas = st.expander("Show all companies in NASDAQ 100", expanded=False)
+
+
+    expander_sp = st.sidebar.expander("S&P 500 companies", expanded=False)
+    expander_nas = st.sidebar.expander("NASDAQ 100 companies", expanded=False)
     with expander_sp:
         df_sym_sp = pd.read_html(
             'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]
@@ -55,11 +51,24 @@ with col_date_sym:
         df_sym_nas = df_sym_nas[['Symbol', 'Company']]
         df_sym_nas.set_index('Company', inplace=True)
         st.dataframe(df_sym_nas)
+    if tiker:
+        if tiker_check == 'Valid':
+            real_tiker = Function.real_data(info_stock)
+            col1,col2,col3 =  st.columns(3)
+            with col1:
+                st.markdown(f"##### {real_tiker[0]}")
+            with col2:
+                st.markdown(f"##### {round(real_tiker[1],2)}")
+            with col3:
+                formatted_value = Function.format_value_chg(real_tiker[-1])
+                st.markdown(f"##### {formatted_value}", unsafe_allow_html=True)
+            fig = Function.candle_stick(info_stock)
+            st.plotly_chart(fig)
 
 
-with (col_update):
+with col_update:
     if 'last_choice' not in st.session_state:
-        st.session_state.last_choice = None
+        st.session_state.last_choice = "Global_ind"
     left_si, mid, right_si = st.columns([2, 1.5, 1.5])
     if left_si.button("Magnificent 7"):
         st.session_state.last_choice = "Magnificent_Seven"
@@ -74,62 +83,69 @@ with (col_update):
     placeholder = st.empty()
 
 # Set the refresh interval
-    refresh_interval_ms = 60 * 1000
+    refresh_interval_ms = 60 * 1000 * 5
 
 
-
+    # container = st.container()
     with placeholder.container():
 
         if st.session_state.last_choice:
             choice = st.session_state.last_choice
             Function.real_list(lists_stocks[choice])
-
-        st.write(f"Last refreshed at: {time.strftime('%H:%M:%S')}")
+        current_time = time.localtime()
+        current_seconds = time.mktime(current_time)
+        new_seconds = current_seconds + 5 * 60
+        new_time = time.localtime(new_seconds)
+        st.write(f"Last refreshed at: {time.strftime('%H:%M:%S')} the next update at: {time.strftime("%H:%M:%S", new_time)}")
 
         st_autorefresh(interval=refresh_interval_ms, key="dynamic_refresh")
 
-list_dates = [datetime.strftime(d,'%Y-%m-%d') for d in range_date]
 
-#After the user press enter and the tiker variable inserted
 
-#Check if tiker valid
-
-#Define tab 4,5 for meta data and fundamental data from yfinance
 if tiker:
     if tiker_check=='Valid':
 
-        tab3,tab4 =st.tabs(['Metadata Symbol','Fundamental Data'])
-        with tab3:
+        col1,col2,col3 =st.columns(3)
+        with col1:
             df_meta = Function.meta_fund_data(info_stock)[0]
-            st.dataframe(df_meta)
-        with tab4:
-            df_fund = Function.meta_fund_data(info_stock)[1]
-            st.dataframe(df_fund)
+            st.markdown(df_meta.to_html(header=False),unsafe_allow_html=True)
+        with col2:
+            df_ratios = Function.ratios_grow(info_stock)[0]
+            df_ratios = df_ratios.set_index('multiplier')
+            df_ratios.index.name = None
+            st.markdown(df_ratios.to_html(header=False),unsafe_allow_html=True)
+        with col3:
+            growth = Function.ratios_grow(info_stock)[1]
+            growth = growth.set_index('growth')
+            growth.index.name = None
+            st.markdown(growth.to_html(header=False),unsafe_allow_html=True)
 
-#Present the current daily data using API
+        expander_mean = st.expander("Average Ratios and Cagr sector",expanded=False)
+        with expander_mean:
+            sector = df_meta.loc['sector'].max()
+            st.markdown(f"#### {sector}")
+            st.write("The average calculated by 50 big market cap. in sector")
+            symbols_sector = Function.get_company_sector(sector.lower(),50)[1]
 
-        st.markdown("---")
-        # st.markdown("Current daily data")
-        data_currently_list = Function.real_data(info_stock)
-
-        if data_currently_list:
-            last_price, previous_price, chg_day_org = data_currently_list
-            with st.container():
-                col1, col2, col3,col4 = st.columns(4)
-                with col1:
-                    st.metric(label="Symbol", value=tiker)
-                with col2:
-                    st.metric(label="last Price today", value=f"{float(last_price):.2f}")
-                with col3:
-                    st.metric(label=" The previous day price", value=f"{float(previous_price):.2f}")
-
-                with col4:
-                    formatted_value = Function.format_value_chg(chg_day_org)
-                    st.markdown(f"##### Change \n{formatted_value}", unsafe_allow_html=True)
-#Define tab 5,6 for historical data and graphs using yfinance library and plotly
-        tab_history,tab_graph = st.tabs(['Historical Data', 'Graphs'])
-
-        with tab_history:
+            concat_multi,concat_growth,mean_ratios,mean_growths = Function.compare_tiker_sector(symbols_sector)
+            col_ratio,col_growth = st.columns(2)
+            with col_ratio:
+                st.dataframe(mean_ratios)
+            with col_growth:
+                st.dataframe(mean_growths)
+            st.write("*Stocks with a change from positive EPS to negative or vice versa were excluded from the average.")
+        today = datetime.now()
+        week_before = today + timedelta(weeks=-1)
+        range_date = st.date_input(
+            "Range of dates"
+            " (by default is one week back from today)",
+            (week_before, today),
+            format="YYYY-MM-DD",
+            max_value=today
+        )
+        if range_date:
+            try:
+                list_dates = [datetime.strftime(d,'%Y-%m-%d') for d in range_date]
                 st.write(f"""
                 The range date for history data is : from {' to '.join(list_dates)}
                 """)
@@ -137,32 +153,56 @@ if tiker:
                 if df_history is not None:
                     st.dataframe(df_history[['Open','High','Low','Close','Volume']])
 
-#Using a custom function I created for generating graphs based on the requested type.
-                    with tab_graph:
-                        tab_line, tab_box,tab_compare = st.tabs(['Line Over Time','Box plot for years','Compare stock with index'])
-                        with tab_line:
-                            fig_line = Function.create_plot(tiker,df_history,'line')
-                            st.plotly_chart(fig_line)
-                        with tab_box:
-                            fig_box_day,fig_box_month = Function.create_plot(tiker,df_history,'box')
-
-
-                            st.plotly_chart(fig_box_day)
-                            diff_days = (datetime.strptime(list_dates[1], '%Y-%m-%d') - datetime.strptime(list_dates[0],
-                                                                                                          '%Y-%m-%d')).days
-                            if diff_days>=30:
-                                st.markdown("---")
-                                st.plotly_chart(fig_box_month)
-                        with tab_compare:
-                            input_index = st.selectbox(label='Index to compare',options=['SPY - S&P 500','QQQ - NASDAQ',"^RUT - russell 2000"],placeholder="Choose index to compare")
+                    st.markdown("---")
+                    with st.expander("Analysis Graphs and compare to indexes"):
+                        col_com,col_graph = st.columns([1,4])
+                        with col_com:
+                            input_index = st.selectbox(label='Index to compare',
+                                                       options=[None, 'SPY - S&P 500', 'QQQ - NASDAQ',
+                                                                "^RUT - russell 2000"],
+                                                       placeholder="Choose index to compare")
                             if input_index:
                                 index_sym = input_index.split("-")[0][:-1]
                                 info_stock_index = yf.Ticker(index_sym)
+                                history_index = Function.create_history_df_yf(info_stock_index, start=list_dates[0],
+                                                                              end=list_dates[1])
+                            else:
+                                history_index = None
 
-                                history_index = Function.create_history_df_yf(info_stock_index, start=list_dates[0],end=list_dates[1])
-                                fig_compare = Function.create_plot(tiker, df_history, 'compare',index_df=history_index)
 
-                                st.plotly_chart(fig_compare)
+                            with col_graph:
+                                tab_line, tab_box,tab_Cumulative = st.tabs(['Line Over Time','Box plot for years','Cumulative Returns'])
+
+                                with tab_line:
+                                    fig_line = Function.create_plot_index(tiker,df_history,history_index,'line')
+
+                                    st.plotly_chart(fig_line)
+                                with tab_box:
+                                    fig_box_day,fig_box_month = Function.create_plot_index(tiker,df_history,history_index,'box')
+
+
+                                    st.plotly_chart(fig_box_day)
+                                    diff_days = (datetime.strptime(list_dates[1], '%Y-%m-%d') - datetime.strptime(list_dates[0],
+                                                                                                                  '%Y-%m-%d')).days
+                                    if diff_days>=30:
+                                        st.markdown("---")
+                                        st.plotly_chart(fig_box_month)
+                                with tab_Cumulative:
+
+                                    fig_compare = Function.create_plot_index(tiker, df_history,history_index,'Cumulative')
+
+                                    st.plotly_chart(fig_compare)
+                    with st.expander("Compare to top five in sector"):
+                        st.write("In built")
+            except:
+                pass
+
+        # if st.button("Advanced Graphs"):
+        #     AV = AutoViz_Class()
+        #     st.write("AutoViz EDA Analysis:")
+        #     AV = AV.AutoViz(filename='', dfte=df_history)
+            # os.remove("temp_sweetviz_report.html")
+
 
 
 
