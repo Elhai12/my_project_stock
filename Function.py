@@ -7,7 +7,7 @@ import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
 from yahooquery import Screener
-
+import sqlite3
 import streamlit.components.v1 as components
 
 
@@ -304,20 +304,19 @@ def compare_tiker_sector(symbols):
 
 
 
+def  create_log(symbol):
+    conn = sqlite3.connect("stock.db")
+    cursor = conn.cursor()
+    cursor.execute("insert into search_logs (symbol) values(?)",(symbol,))
+    conn.commit()
+    conn.close()
 
-
-# def viz(df):
-
-    # analysis = sv.analyze([df,'EDA'], feat_cfg=sv.FeatureConfig(force_text=[]), target_feat=None)
-
-    # report_file = "temp_sweetviz_report.html"
-    # analysis.show_html(filepath=report_file, open_browser=False)
-
-
-    # with open(report_file, "r", encoding="utf-8") as file:
-    #     html_content = file.read()
-    # return html_content
-
+def get_history_search():
+    conn = sqlite3.connect("stock.db")
+    query = "select * from search_logs order by search_time DESC"
+    df_search = pd.read_sql_query(query,conn)
+    conn.close()
+    return df_search
 
 
 

@@ -8,15 +8,24 @@ from streamlit import session_state, container
 from streamlit_autorefresh import st_autorefresh
 import time
 import Function
+import sqlite3
 from get_all_tickers import get_tickers as gt
 import numpy as np
 import os
 # from autoviz.AutoViz_Class import AutoViz_Class
 
 
-#Define secret code
-key_code = st.secrets['my_secret_key']
 
+conn = sqlite3.connect('stock.db')
+cursor = conn.cursor()
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS search_logs (
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+symbol TEXT NOT NULL,
+search_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )
+
+""")
 
 st.image("banner.jpg")
 
@@ -39,6 +48,7 @@ with col_sym:
 
     expander_sp = st.sidebar.expander("S&P 500 companies", expanded=False)
     expander_nas = st.sidebar.expander("NASDAQ 100 companies", expanded=False)
+    expander_search = st.sidebar.expander("History searches", expanded=False)
     with expander_sp:
         df_sym_sp = pd.read_html(
             'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]
@@ -51,8 +61,12 @@ with col_sym:
         df_sym_nas = df_sym_nas[['Symbol', 'Company']]
         df_sym_nas.set_index('Company', inplace=True)
         st.dataframe(df_sym_nas)
+    with expander_search:
+        search_df = Function.get_history_search()
+        st.dataframe(search_df)
     if tiker:
         if tiker_check == 'Valid':
+            Function.create_log(tiker)
             real_tiker = Function.real_data(info_stock)
             col1,col2,col3 =  st.columns(3)
             with col1:
@@ -202,6 +216,7 @@ if tiker:
         #     st.write("AutoViz EDA Analysis:")
         #     AV = AV.AutoViz(filename='', dfte=df_history)
             # os.remove("temp_sweetviz_report.html")
+
 
 
 
