@@ -48,7 +48,7 @@ with col_sym:
 
     expander_sp = st.sidebar.expander("S&P 500 companies", expanded=False)
     expander_nas = st.sidebar.expander("NASDAQ 100 companies", expanded=False)
-    expander_search = st.sidebar.expander("History searches", expanded=False)
+    expander_search = st.sidebar.expander("Search history", expanded=False)
     with expander_sp:
         df_sym_sp = pd.read_html(
             'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]
