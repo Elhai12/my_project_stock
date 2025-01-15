@@ -8,26 +8,17 @@ from streamlit import session_state, container
 from streamlit_autorefresh import st_autorefresh
 import time
 import Function
-import sqlite3
-from get_all_tickers import get_tickers as gt
+import socket
+
+
+
 import numpy as np
 import os
-# from autoviz.AutoViz_Class import AutoViz_Class
 
 
 
-conn = sqlite3.connect('stock.db')
-cursor = conn.cursor()
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS search_logs (
-id INTEGER PRIMARY KEY AUTOINCREMENT,
-symbol TEXT NOT NULL,
-search_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  )
 
-""")
 
-st.image("banner.jpg")
 
 
 lists_stocks = {'Magnificent_Seven':['GOOG','AMZN','AAPL','META','MSFT','NVDA','TSLA']
@@ -68,6 +59,7 @@ with col_sym:
         if tiker_check == 'Valid':
             Function.create_log(tiker)
             real_tiker = Function.real_data(info_stock)
+
             col1,col2,col3 =  st.columns(3)
             with col1:
                 st.markdown(f"##### {real_tiker[0]}")
@@ -82,7 +74,7 @@ with col_sym:
 
 with col_update:
     if 'last_choice' not in st.session_state:
-        st.session_state.last_choice = "Global_ind"
+        st.session_state.last_choice = "Magnificent_Seven"
     left_si, mid, right_si = st.columns([2, 1.5, 1.5])
     if left_si.button("Magnificent 7"):
         st.session_state.last_choice = "Magnificent_Seven"
@@ -134,32 +126,47 @@ if tiker:
             growth.index.name = None
             st.markdown(growth.to_html(header=False),unsafe_allow_html=True)
 
-        expander_mean = st.expander("Average Ratios and Cagr sector",expanded=False)
-        with expander_mean:
-            sector = df_meta.loc['sector'].max()
-            st.markdown(f"#### {sector}")
-            st.write("The average calculated by 50 big market cap. in sector")
-            symbols_sector = Function.get_company_sector(sector.lower(),50)[1]
+        # expander_mean = st.expander("Average Ratios and Cagr sector",expanded=False)
 
-            concat_multi,concat_growth,mean_ratios,mean_growths = Function.compare_tiker_sector(symbols_sector)
-            col_ratio,col_growth = st.columns(2)
-            with col_ratio:
-                st.dataframe(mean_ratios)
-            with col_growth:
-                st.dataframe(mean_growths)
-            st.write("*Stocks with a change from positive EPS to negative or vice versa were excluded from the average.")
+        mean_sector = st.button("Average Ratios and Cagr of sector")
+        if mean_sector:
+            with st.expander("Average Ratios and Cagr of sector"):
+                sector = df_meta.loc['sector'].max()
+                st.markdown(f"#### {sector}")
+                st.write("The average calculated by 50 big market cap. in sector")
+
+                symbols_sector = Function.get_company_sector(sector.lower(),50)[1]
+                if symbols_sector is not None:
+                    concat_multi,concat_growth,mean_ratios,mean_growths = Function.compare_tiker_sector(symbols_sector)
+                    col_ratio,col_growth = st.columns(2)
+                    with col_ratio:
+                        st.dataframe(mean_ratios)
+                    with col_growth:
+                        st.dataframe(mean_growths)
+                    st.write("*Stocks with a change from positive EPS to negative or vice versa were excluded from the average.")
+
         today = datetime.now()
         week_before = today + timedelta(weeks=-1)
-        range_date = st.date_input(
-            "Range of dates"
-            " (by default is one week back from today)",
-            (week_before, today),
-            format="YYYY-MM-DD",
-            max_value=today
-        )
-        if range_date:
+        st.experimental_fragment("history_analysis")
+        sector = df_meta.loc['sector'].max().lower()
+        d = st.container()
+        with d:
+            range_date = st.date_input(
+                    "Range of dates"
+                    " (by default is one week back from today)",
+                    (week_before,today),
+                    format="YYYY-MM-DD",
+                    max_value=today
+            )
             try:
-                list_dates = [datetime.strftime(d,'%Y-%m-%d') for d in range_date]
+                list_dates = [datetime.strftime(d, '%Y-%m-%d') for d in range_date]
+                df_history =  Function.create_history_df_yf(info_stock,list_dates[0],list_dates[1])
+            except:
+                df_history = None
+
+
+            if df_history is not None:
+                # list_dates = [datetime.strftime(d,'%Y-%m-%d') for d in range_date]
                 st.write(f"""
                 The range date for history data is : from {' to '.join(list_dates)}
                 """)
@@ -185,12 +192,19 @@ if tiker:
 
 
                             with col_graph:
-                                tab_line, tab_box,tab_Cumulative = st.tabs(['Line Over Time','Box plot for years','Cumulative Returns'])
+                                tab_line,tab_Cumulative, tab_box = st.tabs(['Close price Over Time','Cumulative Returns','Box plot for years'])
 
                                 with tab_line:
-                                    fig_line = Function.create_plot_index(tiker,df_history,history_index,'line')
+                                    fig_line = Function.create_plot_index(tiker,df_history,history_index,'close')
 
                                     st.plotly_chart(fig_line)
+
+                                with tab_Cumulative:
+
+                                    fig_compare = Function.create_plot_index(tiker, df_history,history_index,'Cumulative')
+
+                                    st.plotly_chart(fig_compare)
+
                                 with tab_box:
                                     fig_box_day,fig_box_month = Function.create_plot_index(tiker,df_history,history_index,'box')
 
@@ -201,15 +215,58 @@ if tiker:
                                     if diff_days>=30:
                                         st.markdown("---")
                                         st.plotly_chart(fig_box_month)
-                                with tab_Cumulative:
+                    if "compression_sector" not in st.session_state:
+                        st.session_state.compression_sector = False
+                    if "top_n" not in st.session_state:
+                        st.session_state.top_n = 1
+                    try:
+                        with st.expander("Comparison to the sector"):
 
-                                    fig_compare = Function.create_plot_index(tiker, df_history,history_index,'Cumulative')
+                            compression_sector = st.button("Comparison with companies in the sector")
 
-                                    st.plotly_chart(fig_compare)
-                    with st.expander("Compare to top five in sector"):
-                        st.write("In built")
-            except:
-                pass
+                            if compression_sector:
+
+                                st.session_state.compression_sector = not st.session_state.compression_sector
+                            if st.session_state.compression_sector:
+                                top_n = st.selectbox(label="Number of top companies to compare",options=range(1,11))
+
+                                if top_n:
+
+                                        st.session_state.top_n = top_n
+
+                                        # st.write(st.session_state['top_n'])
+                                        sector_history_df = Function.df_sector_union(tiker, sector, st.session_state['top_n'],start = list_dates[0],end = list_dates[1])
+
+
+                                        col_interval, col_graph_sector = st.columns([1, 4])
+                                        with col_interval:
+                                            dict_graph = {"Day":"Date","Month":"YearMonth","Year":"Year"}
+                                            input_interval = st.selectbox(label='Interval display',
+                                                                       options=['Day','Month','Year'])
+                                        with col_graph_sector:
+                                            tab_price,tab_return, tab_Cumulative, tab_box = st.tabs(['Price','Return','Cumulative Returns','Box Plot'])
+                                            with tab_price:
+                                                fig_close = Function.plots_sector(sector_history_df, dict_graph[input_interval],
+                                                                                  "close")
+                                                st.plotly_chart(fig_close)
+
+                                            with tab_return:
+                                                fig_return = Function.plots_sector(sector_history_df,dict_graph[input_interval],"return")
+                                                st.plotly_chart(fig_return)
+
+                                            with tab_Cumulative:
+                                                fig_Cumulative = Function.plots_sector(sector_history_df,dict_graph[input_interval],"line_Cumulative")
+                                                st.plotly_chart(fig_Cumulative)
+
+                                            with tab_box:
+                                               fig_box = Function.plots_sector(sector_history_df,dict_graph[input_interval],"box")
+                                               st.plotly_chart(fig_box)
+
+
+
+                    except ValueError as e:
+                     if "One of ms" in str(e):
+                         st.warning("Not have data about sector")
 
         # if st.button("Advanced Graphs"):
         #     AV = AutoViz_Class()
