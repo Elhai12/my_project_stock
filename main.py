@@ -16,7 +16,7 @@ lists_stocks = {'Magnificent_Seven':['GOOG','AMZN','AAPL','META','MSFT','NVDA','
                  ,'TA_IND':['TA35.TA','TA90.TA','^TA125.TA'],
                   'Global_ind':['SPY','QQQ','^RUT','^DJI','^N225']}
 #Define tabs 1 ,2 to insert tiker and range dates
-
+st.image("banner.jpg")
 col_sym,col_update = st.columns([2,1.7])
 with col_sym:
 

@@ -347,10 +347,13 @@ def df_sector_union(tiker,sector,count,start,end):
     data_re = data_sector.reset_index()
     unpivot_data = data_re.melt(id_vars="index",var_name="Stock",value_name="Close")
     unpivot_data.rename(columns={"index": "Date_row"}, inplace=True)
-    unpivot_data['rate_change'] = (unpivot_data['Close'].pct_change())*100
-    unpivot_data['chg_month'] = (unpivot_data['Close'].pct_change(periods=30))*100
+    unpivot_data['rate_change'] = unpivot_data.groupby('Stock')['Close'].transform(
+        lambda x: x.pct_change()*100)
+    unpivot_data['chg_month'] = unpivot_data.groupby('Stock')['Close'].transform(
+        lambda x: x.pct_change(periods=30)*100)
     # unpivot_data['chg_year'] = unpivot_data['Close'].pct_change(periods=365)
-    unpivot_data['Cumulative_Return'] = ((1 + (unpivot_data['rate_change']/100)).cumprod() - 1)*100
+    unpivot_data['Cumulative_Return'] = unpivot_data.groupby('Stock')['rate_change'].transform(
+        lambda x:((1 + (x/100)).cumprod() - 1)*100)
     unpivot_data['Year'] = unpivot_data['Date_row'].dt.year
     unpivot_data['YearMonth'] = unpivot_data['Date_row'].dt.to_period('M').astype(str)
     unpivot_data['Date'] = unpivot_data['Date_row'].dt.date
