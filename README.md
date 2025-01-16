@@ -1,19 +1,11 @@
 The project presents data on a stock by its symbol
 ## The information is organized by three categories:
-* General information about the stock, including metadata and fundamental data.
-* Up-to-date information, including the current closing price, the previous day's closing price, and the percentage change.
-* Historical information, including a table with historical data, performance graphs, and the ability to compare the stock to selected indices.
+* Real-Time Data: Displays real-time information on prominent stocks and a user-selected stock.
+* Key Metrics Calculation: Calculates financial ratios and growth metrics for the selected stock, comparing them to the average metrics of companies in the same sector.
+* Historical Data Analysis: Analyzes the historical performance of the selected stock, including prices, returns, and cumulative returns, in comparison to major indices and the sector.
 
-### How to use the website:
-1. Select a date range (by default, it is set to the last week) and insert the stock symbol you want information about
-(You can use the table on the right to find companies in the S&P 500).
-
-2. After pressing Enter, the tabs with the information will appear.
-
-Under the "Compare stock with index" tab, choose an index
-(by default, it is set to the S&P 500)
-and the graph will display the cumulative return comparison for the selected period.
-
-link to presentation: 
-
-[presentation](https://docs.google.com/presentation/d/1PK5WYlfHj3LpEKEaXyk3PYydT7bmhtqE/edit?usp=drive_link&ouid=113334722140116177196&rtpof=true&sd=true)
+### Usage Instructions:
+* On the right side, real-time data on leading indices and stocks is displayed and updated every five minutes. You can choose a category to view specific information.
+* On the left side, a sidebar allows browsing through all companies listed in the S&P 500 and NASDAQ 100.
+* At the center of the application, users can input a stock ticker to retrieve detailed information, including the closing price, percentage change, and a candlestick chart of the day's prices.
+  Additional analysis options are available for the selected stock, including performance comparisons to key indices and the sector.

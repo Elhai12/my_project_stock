@@ -359,8 +359,9 @@ def df_sector_union(tiker,sector,count,start,end):
 def agg_data(df,col_agg):
     df = df.sort_values("Date")
     df_agg = df.groupby([col_agg,'Stock'])['Close'].last().reset_index()
-    df_agg['rate_change'] = (df_agg['Close'].pct_change())*100
-    df_agg['Cumulative_Return'] = ((1 + (df_agg['rate_change']/100)).cumprod() - 1)*100
+    df_agg['rate_change'] = df_agg.groupby('Stock')['Close'].transform(lambda x: x.pct_change() * 100)
+    df_agg['Cumulative_Return'] = df_agg.groupby('Stock')['rate_change'].transform(
+                lambda x: ((1 + (x / 100)).cumprod() - 1) * 100)
     return df_agg
 
 def plots_sector(data_sector,month_year_day,type_plot):
