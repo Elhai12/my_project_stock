@@ -1,3 +1,4 @@
+import sqlite3
 import matplotlib.pyplot as plt
 import streamlit as st
 import pandas as pd
@@ -8,18 +9,8 @@ from streamlit import session_state, container
 from streamlit_autorefresh import st_autorefresh
 import time
 import Function
-import socket
-
-
-
 import numpy as np
 import os
-
-
-
-
-
-
 
 lists_stocks = {'Magnificent_Seven':['GOOG','AMZN','AAPL','META','MSFT','NVDA','TSLA']
                  ,'TA_IND':['TA35.TA','TA90.TA','^TA125.TA'],

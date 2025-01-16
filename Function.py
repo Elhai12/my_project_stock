@@ -313,6 +313,13 @@ def compare_tiker_sector(symbols):
     df_mean_growths = df_mean_growths.apply(lambda x: round(x, 2))
     return concat_multi,concat_growth,df_mean_ratios,df_mean_growths
 
+def remove_table():
+    conn = sqlite3.connect("stock.db")
+    cursor = conn.cursor()
+    cursor.execute("delete from search_logs")
+    conn.commit()
+    conn.close()
+
 
 
 def  create_log(symbol):
